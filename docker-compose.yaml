@@ -6,7 +6,7 @@ services:
       dockerfile: ./Dockerfile
     command:
       - "gunicorn"
-      - "mysite.wsgi:application"
+      - "megano.wsgi:application"
       - "--bind"
       - "0.0.0.0:8000"
     ports:
@@ -20,4 +20,4 @@ services:
         max-file: "10"
         max-size: "200K"
     volumes:
-      - ./mysite/database:/app/database
+      - ./megano/database:/app/database

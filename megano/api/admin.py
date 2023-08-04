@@ -14,15 +14,16 @@ class ProductSpecificationInline(admin.StackedInline):
 class ProductTagInline(admin.StackedInline):
     model = Tag
 
-class ProfileAvatarInLine(admin.StackedInline):
+class ProfileAvatarInLine(admin.TabularInline):
     model = ProfileAvatar
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = "pk", "fullName", "user", "phone"
-    inlines = [
-        ProfileAvatarInLine,
-    ]
+
+    list_display = "pk", "fullName", "user", "phone", "avatar"
+
+    inlines = [ProfileAvatarInLine]
+
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

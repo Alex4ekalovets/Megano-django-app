@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from api.models import Product, Review, Profile, ProfileAvatar
 from api.serializers import ProductSerializer, ReviewSerializer, LoginSerializer, UserSerializer, ProfileSerializer, \
-    PasswordSerializer
+    PasswordSerializer, ProfileAvatarSerializer
 
 
 class CustomPagination(pagination.PageNumberPagination):
@@ -73,17 +73,12 @@ class ReviewCreateView(CreateAPIView):
 class LoginView(APIView):
 
     def post(self, request):
-        data_unicode = request.body.decode("utf-8")
-        data = json.loads(data_unicode)
+        data_serialized = list(request.data.keys())[0]
+        data = json.loads(data_serialized)
         serializer = LoginSerializer(data=data)
         if serializer.is_valid():
-            user = authenticate(
-                request,
-                username=data["username"],
-                password=data["password"]
-            )
+            user = user_login(request, data)
             if user is not None:
-                login(request, user)
                 return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -91,49 +86,72 @@ class LoginView(APIView):
 class UserCreateView(APIView):
 
     def post(self, request):
-        data_unicode = request.body.decode("utf-8")
-        data = json.loads(data_unicode)
+        data_serialized = list(request.data.keys())[0]
+        data = json.loads(data_serialized)
         serializer = UserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            user = user_login(request, data)
+            get_or_create_profile_and_avatar(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ProfileViewSet(RetrieveAPIView, UpdateModelMixin):
+class ProfileView(RetrieveAPIView, UpdateModelMixin):
+    permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
     def get_object(self):
-        user = self.request.user
-        profile, _ = Profile.objects.get_or_create(user=user)
-        return profile
+        return get_or_create_profile_and_avatar(user=self.request.user)
 
     def post(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
 
-class AvatarUpdateView(View):
+class AvatarUpdateView(APIView):
+
     def post(self, request):
-        user = self.request.user
-        avatar, _ = ProfileAvatar.objects.get_or_create(profile=user.profile)
+        avatar = self.request.user.profile.avatar
         avatar.src = request.FILES["avatar"]
-        avatar.save()
-        return HttpResponse(status="200")
+        avatar.save(update_fields=["src"])
+        return Response(status=status.HTTP_200_OK)
 
 
-class PasswordUpdateView(UpdateAPIView):
-    serializer_class = PasswordSerializer
+class PasswordUpdateView(APIView):
 
-    def get_object(self):
-        return self.request.user
-
-    def post(self, request):
-        instance = self.get_object()
-        data = request.data
-        old_password = data.pop("currentPassword")
-        data["password"] = make_password(data.pop("newPassword"))
-        serializer = self.get_serializer(instance, data=data, partial=False)
-        if check_password(old_password, instance.password) and serializer.is_valid(raise_exception=True):
-            self.perform_update(serializer)
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        serializer = PasswordSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid() and check_password(serializer.validated_data["currentPassword"], user.password):
+            user.password = make_password(serializer.validated_data["newPassword"])
+            user.save(update_fields=["password"])
+            login(request, user)
             return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+def user_login(request, data):
+    user = authenticate(
+        request,
+        username=data["username"],
+        password=data["password"]
+    )
+    if user is not None:
+        login(request, user)
+        print(f"User {data['username']} login")
+    else:
+        print(f"User with {data} not exist")
+    return user
+
+
+def get_or_create_profile_and_avatar(user):
+    try:
+        profile = Profile.objects.select_related("user", "avatar").get(user=user)
+        print(f"User {user.username} profile exist")
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=user)
+        avatar = ProfileAvatar.objects.create(profile=profile)
+        print(f"Created avatar {avatar} and profile {profile} for user {user.username}")
+    return profile
+
+

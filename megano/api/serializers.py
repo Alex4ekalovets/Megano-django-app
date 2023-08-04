@@ -1,9 +1,10 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import MinimumLengthValidator
 from django.db.models import Avg
 from rest_framework import serializers
 
-from .models import Product, Review, ProductImage, Specification, Tag, Profile
+from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -21,7 +22,6 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ImageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ProductImage
         fields = (
@@ -31,7 +31,6 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class SpecificationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Specification
         fields = (
@@ -41,7 +40,6 @@ class SpecificationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Tag
         fields = (
@@ -113,8 +111,21 @@ class UserSerializer(serializers.ModelSerializer):
         return super(UserSerializer, self).create(validated_data)
 
 
+class ProfileAvatarSerializer(serializers.ModelSerializer):
+    src = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProfileAvatar
+        fields = ("src", "alt")
+
+    def get_src(self, obj):
+        return obj.src.url
+
+
 class ProfileSerializer(serializers.ModelSerializer):
-    email = serializers.CharField(max_length=255, source="user.email")
+    email = serializers.EmailField(max_length=255, source="user.email")
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
         fields = (
@@ -125,20 +136,27 @@ class ProfileSerializer(serializers.ModelSerializer):
         )
         depth = 1
 
-    def update(self, instance, validated_data):
+    def get_avatar(self, profile):
+        return ProfileAvatarSerializer(profile.avatar).data
+
+    def update(self, profile, validated_data):
+        def update_selected_fields(obj, data):
+            for k, v in data.items():
+                setattr(obj, k, v)
+            update_fields = list(data.keys())
+            obj.save(update_fields=update_fields)
+
         user_data = validated_data.pop('user')
-        user = instance.user
-        for k, v in user_data.items():
-            setattr(user, k, v)
-        user.save()
         profile_data = validated_data
-        for k, v in profile_data.items():
-            setattr(instance, k, v)
-        instance.save()
-        return instance
+
+        update_selected_fields(obj=profile.user, data=user_data)
+        update_selected_fields(obj=profile, data=profile_data)
+        return profile
 
 
 class PasswordSerializer(serializers.ModelSerializer):
+    currentPassword = serializers.CharField(max_length=128)
+    newPassword = serializers.CharField(max_length=128, min_length=5)
     class Meta:
         model = User
-        fields = ("password", )
+        fields = ("currentPassword", "newPassword")

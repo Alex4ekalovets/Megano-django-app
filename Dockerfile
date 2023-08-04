@@ -17,8 +17,8 @@ RUN rm -rf dist && python setup.py sdist && pip install dist/*
 
 WORKDIR /app
 
-COPY mysite .env.template ./
+COPY megano .env.template ./
 
 RUN python manage.py collectstatic
 
-CMD ["gunicorn", "mysite.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "megano.wsgi:application", "--bind", "0.0.0.0:8000"]

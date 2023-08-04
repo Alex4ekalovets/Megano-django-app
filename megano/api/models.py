@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 
@@ -65,7 +65,7 @@ class Review(models.Model):
         default=0,
         validators=[
             MaxValueValidator(5),
-            MinValueValidator(0)
+            MinValueValidator(1)
         ])
     date = models.DateTimeField(auto_now_add=True)
 
@@ -82,3 +82,26 @@ class Specification(models.Model):
     class Meta:
         verbose_name = "specification"
         verbose_name_plural = "Specifications"
+
+
+def profile_avatar_directory_path(instance: "Profile", filename: str) -> str:
+    return "profiles/profile_{pk}/avatar/{filename}".format(
+        pk=instance.profile.pk,
+        filename=filename,
+    )
+
+
+class Profile(models.Model):
+    phone_regex = RegexValidator(
+        regex=r'^\+?1?\d{11}$',
+        message="Phone number must be entered in the format: '+999999999'. Up to 10 digits allowed."
+    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    fullName = models.CharField(max_length=150, null=False, blank=True)
+    phone = models.CharField(max_length=12, validators=[phone_regex], unique=True)
+
+
+class ProfileAvatar(models.Model):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name="avatar")
+    src = models.ImageField(upload_to=profile_avatar_directory_path)
+    alt = models.CharField(max_length=120, null=False, blank=True)

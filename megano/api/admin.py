@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from shopapp.models import Product, ProductImage, Category, Tag, Review, Specification
+from api.models import Product, ProductImage, Category, Tag, Review, Specification, Profile, ProfileAvatar
 
 
 class ProductImageInline(admin.StackedInline):
@@ -14,6 +14,15 @@ class ProductSpecificationInline(admin.StackedInline):
 class ProductTagInline(admin.StackedInline):
     model = Tag
 
+class ProfileAvatarInLine(admin.StackedInline):
+    model = ProfileAvatar
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = "pk", "fullName", "user", "phone"
+    inlines = [
+        ProfileAvatarInLine,
+    ]
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

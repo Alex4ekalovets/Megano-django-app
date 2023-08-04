@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models import Avg
 from rest_framework import serializers
 
-from .models import Product, Review, ProductImage, Specification, Tag
+from .models import Product, Review, ProductImage, Specification, Tag, Profile
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -102,13 +102,43 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
+        fields = (
             "name",
             "username",
             "password",
-        ]
+        )
 
     def create(self, validated_data):
         validated_data["password"] = make_password(validated_data.get("password"))
         return super(UserSerializer, self).create(validated_data)
 
+
+class ProfileSerializer(serializers.ModelSerializer):
+    email = serializers.CharField(max_length=255, source="user.email")
+    class Meta:
+        model = Profile
+        fields = (
+            "fullName",
+            "email",
+            "phone",
+            "avatar",
+        )
+        depth = 1
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user')
+        user = instance.user
+        for k, v in user_data.items():
+            setattr(user, k, v)
+        user.save()
+        profile_data = validated_data
+        for k, v in profile_data.items():
+            setattr(instance, k, v)
+        instance.save()
+        return instance
+
+
+class PasswordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("password", )

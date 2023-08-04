@@ -55,8 +55,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "frontend",
+    "django_rename_app",
 
-    "shopapp.apps.ShopappConfig",
+    "api.apps.ApiConfig",
 
 ]
 

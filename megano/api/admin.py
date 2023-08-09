@@ -1,33 +1,39 @@
 from django.contrib import admin
+from django_mptt_admin.admin import DjangoMpttAdmin
 
-from api.models import Product, ProductImage, Category, Tag, Review, Specification, Profile, ProfileAvatar
+from api.models import Product, ProductImage, Category, Tag, Review, Specification, Profile, ProfileAvatar, ProductTag, \
+    CategoryImage
 
 
 class ProductImageInline(admin.StackedInline):
     model = ProductImage
+    classes = ["wide", "collapse"]
 
 
 class ProductSpecificationInline(admin.StackedInline):
     model = Specification
+    classes = ["wide", "collapse"]
 
 
 class ProductTagInline(admin.StackedInline):
-    model = Tag
+    model = ProductTag
+    classes = ["wide", "collapse"]
+
 
 class ProfileAvatarInLine(admin.TabularInline):
     model = ProfileAvatar
 
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = "pk", "name"
+
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-
     list_display = "pk", "fullName", "user", "phone", "avatar"
 
     inlines = [ProfileAvatarInLine]
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = "pk", "title"
 
 
 @admin.register(Review)
@@ -49,19 +55,15 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = "title", "description"
     fieldsets = [
         (None, {
-           "fields": ("title", "description"),
-        }),
-        ("Price options", {
-            "fields": ("price",),
-            "classes": ("wide", "collapse"),
-        }),
-        ("Count options", {
-            "fields": ("count",),
-            "classes": ("wide", "collapse"),
-        }),
-        ("Category", {
-            "fields": ("category",),
-            "classes": ("wide", "collapse"),
+            "fields": (
+                "title",
+                "description",
+                "price",
+                "count",
+                "category",
+                "fullDescription",
+                "freeDelivery",
+            ),
         }),
         ("Extra options", {
             "fields": ("archived",),
@@ -74,3 +76,15 @@ class ProductAdmin(admin.ModelAdmin):
         if len(obj.description) < 48:
             return obj.description
         return obj.description[:48] + "..."
+
+
+class CategoryImageInLine(admin.StackedInline):
+    model = CategoryImage
+
+
+@admin.register(Category)
+class CategoryAdmin(DjangoMpttAdmin):
+    inlines = [
+        CategoryImageInLine,
+    ]
+    prepopulated_fields = {"slug": ("title",)}

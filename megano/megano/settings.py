@@ -56,6 +56,9 @@ INSTALLED_APPS = [
     "django_filters",
     "frontend",
     "imagekit",
+    "mptt",
+    "django_mptt_admin",
+    "rest_framework_recursive",
 
     "api.apps.ApiConfig",
 

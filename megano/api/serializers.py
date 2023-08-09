@@ -1,10 +1,10 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.contrib.auth.password_validation import MinimumLengthValidator
 from django.db.models import Avg
 from rest_framework import serializers
+from rest_framework_recursive.fields import RecursiveField
 
-from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar
+from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar, Category, CategoryImage
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -21,13 +21,17 @@ class ReviewSerializer(serializers.ModelSerializer):
         )
 
 
-class ImageSerializer(serializers.ModelSerializer):
+class ImageSerializer(serializers.Serializer):
+    src = serializers.SerializerMethodField()
+
     class Meta:
-        model = ProductImage
         fields = (
             "src",
             "alt",
         )
+
+    def get_src(self, instance):
+        return instance.src.url
 
 
 class SpecificationSerializer(serializers.ModelSerializer):
@@ -48,45 +52,60 @@ class TagSerializer(serializers.ModelSerializer):
         )
 
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    src = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = (
+            "src",
+            "alt",
+        )
+
+    def get_src(self, instance):
+        return instance.src.url
+
+
 class ProductSerializer(serializers.ModelSerializer):
+    date = serializers.DateTimeField(
+        format="%a %b %d %Y %H:%M:%S %Z%z (Central European Standard Time)"
+    )
     rating = serializers.SerializerMethodField("calculate_rating")
-    reviews = serializers.SerializerMethodField("get_reviews")
-    images = serializers.SerializerMethodField("get_images")
-    specifications = serializers.SerializerMethodField("get_specifications")
-    tags = serializers.SerializerMethodField("get_tags")
+    reviews = ReviewSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
+    specifications = SpecificationSerializer(many=True, read_only=True)
+    # В случае, если исправят в соответствии со swagger
+    # tags = serializers.SlugRelatedField(
+    #     many=True,
+    #     read_only=True,
+    #     slug_field="name"
+    # )
+
+    # как указано в контракте в swagger не работает, поэтому оставляем так
+    tags = TagSerializer(many=True)
 
     class Meta:
         model = Product
         fields = (
             "id",
-            "title",
-            "description",
+            "category",
             "price",
             "count",
             "date",
+            "title",
+            "description",
+            "fullDescription",
+            "freeDelivery",
             "images",
             "tags",
             "reviews",
             "specifications",
             "rating",
         )
-        depth = 1
 
     def calculate_rating(self, product) -> float:
         rating = product.reviews.aggregate(rating=Avg("rate"))["rating"]
         return rating
-
-    def get_reviews(self, product):
-        return ReviewSerializer(product.reviews, many=True).data
-
-    def get_images(self, product):
-        return ImageSerializer(product.images, many=True).data
-
-    def get_specifications(self, product):
-        return SpecificationSerializer(product.specifications, many=True).data
-
-    def get_tags(self, product):
-        return TagSerializer(product.tags, many=True).data
 
 
 class LoginSerializer(serializers.Serializer):
@@ -116,10 +135,13 @@ class ProfileAvatarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProfileAvatar
-        fields = ("src", "alt")
+        fields = (
+            "src",
+            "alt",
+        )
 
-    def get_src(self, obj):
-        return obj.src.url
+    def get_src(self, instance):
+        return instance.src.url
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -157,6 +179,30 @@ class ProfileSerializer(serializers.ModelSerializer):
 class PasswordSerializer(serializers.ModelSerializer):
     currentPassword = serializers.CharField(max_length=128)
     newPassword = serializers.CharField(max_length=128, min_length=5)
+
     class Meta:
         model = User
         fields = ("currentPassword", "newPassword")
+
+
+class CategoryImageSerializer(serializers.ModelSerializer):
+    src = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CategoryImage
+        fields = (
+            "src",
+            "alt",
+        )
+
+    def get_src(self, instance):
+        return instance.src.url
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    subcategories = RecursiveField(allow_null=True, many=True)
+    image = CategoryImageSerializer()
+
+    class Meta:
+        model = Category
+        fields = ("id", "title", "image", "subcategories",)

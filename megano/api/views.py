@@ -2,23 +2,21 @@ import json
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password, check_password
-from django.http import HttpResponse
-from django.views import View
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, pagination
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.mixins import UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Product, Review, Profile, ProfileAvatar
+from api.models import Product, Review, Profile, ProfileAvatar, Tag, Category
 from api.serializers import ProductSerializer, ReviewSerializer, LoginSerializer, UserSerializer, ProfileSerializer, \
-    PasswordSerializer, ProfileAvatarSerializer
+    PasswordSerializer, TagSerializer, CategorySerializer
 
 
-class CustomPagination(pagination.PageNumberPagination):
+class CatalogPagination(pagination.PageNumberPagination):
     def get_paginated_response(self, data):
         return Response({
             "items": data,
@@ -30,14 +28,14 @@ class CustomPagination(pagination.PageNumberPagination):
 
 
 class ProductDetailView(RetrieveAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.prefetch_related("tags")
     serializer_class = ProductSerializer
 
 
 class CatalogListView(ListAPIView):
     queryset = Product.objects.all().order_by("pk")
     serializer_class = ProductSerializer
-    pagination_class = CustomPagination
+    pagination_class = CatalogPagination
     filter_backends = [
         SearchFilter,
         DjangoFilterBackend,
@@ -70,7 +68,7 @@ class ReviewCreateView(CreateAPIView):
         )
 
 
-class LoginView(APIView):
+class SignInView(APIView):
 
     def post(self, request):
         data_serialized = list(request.data.keys())[0]
@@ -83,7 +81,7 @@ class LoginView(APIView):
         return Response(serializer.data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class UserCreateView(APIView):
+class SignUpView(APIView):
 
     def post(self, request):
         data_serialized = list(request.data.keys())[0]
@@ -155,3 +153,13 @@ def get_or_create_profile_and_avatar(user):
     return profile
 
 
+class TagListView(ListAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    pagination_class = None
+
+
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.root_nodes()
+    serializer_class = CategorySerializer
+    pagination_class = None

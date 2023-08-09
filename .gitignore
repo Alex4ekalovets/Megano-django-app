@@ -132,4 +132,5 @@ dmypy.json
 
 # Jetbrains Intellij IDEA
 .idea/
+/megano/media
 

@@ -1,58 +1,117 @@
 import json
+import random
+from math import ceil
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password, check_password
-from django.http import HttpResponse
-from django.views import View
-from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg, Count
 from rest_framework import status, pagination
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, UpdateAPIView
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.mixins import UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Product, Review, Profile, ProfileAvatar
+from api.models import Product, Review, Profile, ProfileAvatar, Tag, Category, Sale
 from api.serializers import ProductSerializer, ReviewSerializer, LoginSerializer, UserSerializer, ProfileSerializer, \
-    PasswordSerializer, ProfileAvatarSerializer
+    PasswordSerializer, TagSerializer, CategorySerializer, CatalogSerializer, SaleSerializer
 
 
 class CustomPagination(pagination.PageNumberPagination):
+    page_query_param = "currentPage"
+    page_size = 20
+
     def get_paginated_response(self, data):
+        last_page = ceil(self.page.paginator.count / self.page_size)
         return Response({
             "items": data,
-            "currentPage": self.page.paginator.count,
-            "nextPage": self.get_next_link(),
-            "previousPage": self.get_previous_link(),
-            "lastPage": self.get_next_link(),
+            "currentPage": self.page.number,
+            "lastPage": last_page,
         })
 
 
 class ProductDetailView(RetrieveAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.annotate(rating=Avg("reviews__rate")).prefetch_related("tags")
     serializer_class = ProductSerializer
+
+
+class PopularProductsListView(ListAPIView):
+    queryset = Product.objects.annotate(
+        rating=Avg("reviews__rate"),
+        reviews_count=Count("reviews")
+    ).prefetch_related("tags").order_by("-rating")[:8]
+    serializer_class = CatalogSerializer
+    pagination_class = None
+
+
+class LimitedProductsListView(ListAPIView):
+    queryset = Product.objects.annotate(
+        rating=Avg("reviews__rate"),
+        reviews_count=Count("reviews")
+    ).prefetch_related("tags").filter(limited_edition=True)
+    serializer_class = CatalogSerializer
+    pagination_class = None
+
+
+class BannerListView(ListAPIView):
+    serializer_class = CatalogSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        product_ids = list(Product.objects.values_list('id', flat=True))
+        random_product_ids = random.sample(product_ids, min(len(product_ids), 3))
+        queryset = Product.objects.annotate(
+            rating=Avg("reviews__rate"),
+            reviews_count=Count("reviews")
+        ).filter(id__in=random_product_ids).prefetch_related("specifications", "images", "tags")
+        return queryset
 
 
 class CatalogListView(ListAPIView):
-    queryset = Product.objects.all().order_by("pk")
-    serializer_class = ProductSerializer
+    serializer_class = CatalogSerializer
     pagination_class = CustomPagination
-    filter_backends = [
-        SearchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-    ]
-    search_fields = ["name", "description"]
-    filterset_fields = [
-        "title",
-        "description",
-        "price",
-    ]
-    ordering_fields = [
-        "title",
-        "price",
-    ]
+
+    def get_queryset(self):
+        queryset = Product.objects.annotate(
+            rating=Avg("reviews__rate"),
+            reviews_count=Count("reviews")
+        ).prefetch_related("specifications", "tags", "images")
+
+        query_params = self.request.query_params
+
+        categories = []
+
+        def get_all_subcategories(category):
+            categories.append(category.id)
+            children = category.get_children()
+            if children is None:
+                return
+            list(map(get_all_subcategories, children))
+
+        if query_params.get("category") is not None:
+            category = Category.objects.get(id=int(query_params.get("category")))
+            get_all_subcategories(category)
+            queryset = queryset.filter(category__in=categories)
+        if query_params.get("tags[]") is not None:
+            queryset = queryset.filter(tags__in=map(int, query_params.getlist("tags[]")))
+        if query_params.get("filter[freeDelivery]") == "true":
+            queryset = queryset.filter(freeDelivery=True)
+        if query_params.get("filter[available]") == "true":
+            queryset = queryset.exclude(count=0)
+        if query_params.get("sortType") == "dec":
+            sort = "-" + query_params.get("sort")
+        else:
+            sort = query_params.get("sort")
+
+        queryset = queryset.filter(
+            title__icontains=query_params.get("filter[name]"),
+            price__range=[
+                int(query_params.get("filter[minPrice]")),
+                int(query_params.get("filter[maxPrice]"))
+            ],
+        ).order_by(sort)
+
+        return queryset
 
 
 class ReviewCreateView(CreateAPIView):
@@ -70,7 +129,7 @@ class ReviewCreateView(CreateAPIView):
         )
 
 
-class LoginView(APIView):
+class SignInView(APIView):
 
     def post(self, request):
         data_serialized = list(request.data.keys())[0]
@@ -83,7 +142,7 @@ class LoginView(APIView):
         return Response(serializer.data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class UserCreateView(APIView):
+class SignUpView(APIView):
 
     def post(self, request):
         data_serialized = list(request.data.keys())[0]
@@ -155,3 +214,19 @@ def get_or_create_profile_and_avatar(user):
     return profile
 
 
+class TagListView(ListAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    pagination_class = None
+
+
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.root_nodes()
+    serializer_class = CategorySerializer
+    pagination_class = None
+
+
+class SaleListView(ListAPIView):
+    queryset = Sale.objects.select_related("product").prefetch_related("product__images")
+    serializer_class = SaleSerializer
+    pagination_class = CustomPagination

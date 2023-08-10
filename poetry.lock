@@ -110,6 +110,54 @@ async-dramatiq = ["django-dramatiq (>=0.4.0)"]
 async-rq = ["django-rq (>=0.6.0)"]
 
 [[package]]
+name = "django-js-asset"
+version = "2.1.0"
+description = "script tag with additional attributes for django.forms.Media"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "django_js_asset-2.1.0-py3-none-any.whl", hash = "sha256:36a3a4dd6e9efc895fb127d13126020f6ec1ec9469ad42878d42143f22495d90"},
+    {file = "django_js_asset-2.1.0.tar.gz", hash = "sha256:be6f69ae5c4865617aa7726c48eddb64089a1e7d4ea7d22a35a3beb8282020f6"},
+]
+
+[package.dependencies]
+django = ">=3.2"
+
+[package.extras]
+tests = ["coverage"]
+
+[[package]]
+name = "django-mptt"
+version = "0.14.0"
+description = "Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "django-mptt-0.14.0.tar.gz", hash = "sha256:2c92a2b1614c53086278795ccf50580cf1f9b8564f3ff03055dd62bab5987711"},
+    {file = "django_mptt-0.14.0-py3-none-any.whl", hash = "sha256:d9a87433ab0e4f35247c6f6d5a93ace6990860a4ba8796f815d185f773b9acfc"},
+]
+
+[package.dependencies]
+django-js-asset = "*"
+
+[package.extras]
+tests = ["coverage", "mock-django"]
+
+[[package]]
+name = "django-mptt-admin"
+version = "2.5.1"
+description = "Django-mptt-admin provides a nice Django Admin interface for Mptt models"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-mptt-admin-2.5.1.tar.gz", hash = "sha256:e9ffc56cca1b1fbe79da0408ffdf03971077e4716b08b68028a22007b0852c40"},
+    {file = "django_mptt_admin-2.5.1-py2.py3-none-any.whl", hash = "sha256:d91905bea029aabbca243436b72963341160eb54b7b6b49122a8843d0871fac6"},
+]
+
+[package.dependencies]
+django-mptt = "*"
+
+[[package]]
 name = "djangorestframework"
 version = "3.14.0"
 description = "Web APIs for Django, made easy."
@@ -123,6 +171,21 @@ files = [
 [package.dependencies]
 django = ">=3.0"
 pytz = "*"
+
+[[package]]
+name = "djangorestframework-recursive"
+version = "0.1.2"
+description = "Recursive Serialization for Django REST framework"
+optional = false
+python-versions = "*"
+files = [
+    {file = "djangorestframework-recursive-0.1.2.tar.gz", hash = "sha256:f8fc2d677ccb32fe53ec4153a45f66c822d0ce444824cba56edc76ca89b704ae"},
+    {file = "djangorestframework_recursive-0.1.2-py2.py3-none-any.whl", hash = "sha256:e4e51b26b7ee3c9f9b838885d638b91293e7c66e85b5955f278a6e10eb34ce7c"},
+]
+
+[package.dependencies]
+Django = "*"
+djangorestframework = ">=3.0"
 
 [[package]]
 name = "gunicorn"
@@ -296,4 +359,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "5afd1d3a2ba545b46069aa402fe5f290ddb4c2848c726816081e13492d78a2ad"
+content-hash = "a204d460465da161d539ca16dc819f500044a36c7794e2dcc81f96cdbfa90555"

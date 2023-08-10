@@ -98,7 +98,25 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class CatalogSerializer(ProductSerializer):
     rating = serializers.FloatField()
-    images = ProductImageSerializer(many=True, read_only=True)
+    reviews = serializers.FloatField(source="reviews_count")
+
+    class Meta:
+        model = Product
+        fields = (
+            "id",
+            "category",
+            "price",
+            "count",
+            "date",
+            "title",
+            "description",
+            "fullDescription",
+            "freeDelivery",
+            "images",
+            "tags",
+            "reviews",
+            "rating",
+        )
 
 
 class LoginSerializer(serializers.Serializer):

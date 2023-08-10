@@ -22,7 +22,5 @@ WORKDIR /app
 COPY megano .env ./
 
 RUN python manage.py collectstatic
-RUN python manage.py migrare
-RUN python manage.py loaddata fixtures/test_data.json
 
 CMD ["gunicorn", "megano.wsgi:application", "--bind", "0.0.0.0:8000"]

@@ -45,6 +45,10 @@ class CategoryImage(models.Model):
     src = models.ImageField(upload_to=category_image_directory_path, verbose_name="Link")
     alt = models.CharField(max_length=200, null=False, blank=True, verbose_name="Description")
 
+    class Meta:
+        verbose_name = "category image"
+        verbose_name_plural = "categories images"
+
 
 class Tag(models.Model):
     """Модель тэгов"""
@@ -70,6 +74,7 @@ class Product(models.Model):
     fullDescription = models.TextField(null=False, blank=True, verbose_name="Full description")
     freeDelivery = models.BooleanField(default=False, verbose_name="Free delivery")
     tags = models.ManyToManyField(Tag, through="ProductTag", related_name="products", verbose_name="Tag")
+    limited_edition = models.BooleanField(default=False, verbose_name="Limited edition")
 
     def __str__(self):
         return f"{self.title} (pk={self.pk})"
@@ -91,6 +96,10 @@ class ProductTag(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Product")
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, verbose_name="Tag")
 
+    class Meta:
+        verbose_name = "product tag"
+        verbose_name_plural = "products tags"
+
 
 @cleanup.select
 class ProductImage(models.Model):
@@ -98,6 +107,11 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images", verbose_name="Product")
     src = models.ImageField(upload_to=product_images_directory_path, verbose_name="Link")
     alt = models.CharField(max_length=200, null=False, blank=True, verbose_name="Description")
+
+    class Meta:
+        ordering = ["src"]
+        verbose_name = "product image"
+        verbose_name_plural = "products images"
 
 
 class Review(models.Model):
@@ -163,6 +177,10 @@ class Profile(models.Model):
         verbose_name="Phone number"
     )
 
+    class Meta:
+        verbose_name = "profile"
+        verbose_name_plural = "profiles"
+
 
 @cleanup.select
 class ProfileAvatar(models.Model):
@@ -181,3 +199,19 @@ class ProfileAvatar(models.Model):
                               verbose_name="Link"
                               )
     alt = models.CharField(max_length=128, default="avatar", verbose_name="Description")
+
+    class Meta:
+        verbose_name = "profile avatar"
+        verbose_name_plural = "profiles avatars"
+
+
+class Sale(models.Model):
+    """Модель распродаж"""
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name="sale", verbose_name="Product")
+    salePrice = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="Sale price")
+    dateFrom = models.DateTimeField(verbose_name="Sale start")
+    dateTo = models.DateTimeField(verbose_name="Sale end")
+
+    class Meta:
+        verbose_name = "sale"
+        verbose_name_plural = "sales"

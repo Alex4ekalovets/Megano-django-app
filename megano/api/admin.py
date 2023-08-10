@@ -2,7 +2,7 @@ from django.contrib import admin
 from django_mptt_admin.admin import DjangoMpttAdmin
 
 from api.models import Product, ProductImage, Category, Tag, Review, Specification, Profile, ProfileAvatar, ProductTag, \
-    CategoryImage
+    CategoryImage, Sale
 
 
 class ProductImageInline(admin.StackedInline):
@@ -41,6 +41,11 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = "pk", "product", "author", "email", "text", "rate", "date"
 
 
+@admin.register(Sale)
+class SaleAdmin(admin.ModelAdmin):
+    list_display = "pk", "product", "salePrice", "dateFrom", "dateTo"
+
+
 # Register your models here.
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -63,6 +68,7 @@ class ProductAdmin(admin.ModelAdmin):
                 "category",
                 "fullDescription",
                 "freeDelivery",
+                "limited_edition",
             ),
         }),
         ("Extra options", {

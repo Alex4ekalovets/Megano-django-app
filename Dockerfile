@@ -17,8 +17,12 @@ RUN rm -rf dist && python setup.py sdist && pip install dist/*
 
 WORKDIR /app
 
-COPY megano .env.template ./
+#COPY megano .env.template ./
+#Временно для простоты копируем сам .env
+COPY megano .env ./
 
 RUN python manage.py collectstatic
+RUN python manage.py migrare
+RUN python manage.py loaddata fixtures/test_data.json
 
 CMD ["gunicorn", "megano.wsgi:application", "--bind", "0.0.0.0:8000"]

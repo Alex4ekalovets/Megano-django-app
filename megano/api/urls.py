@@ -2,7 +2,8 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path
 
 from api.views import (ProductDetailView, SignInView, ReviewCreateView, SignUpView, CatalogListView,
-                       AvatarUpdateView, PasswordUpdateView, ProfileView, TagListView, CategoryListView)
+                       AvatarUpdateView, PasswordUpdateView, ProfileView, TagListView, CategoryListView,
+                       PopularProductsListView, LimitedProductsListView, BannerListView, SaleListView)
 
 app_name = "api"
 
@@ -15,10 +16,10 @@ urlpatterns = [
     # catalog
     path("categories", CategoryListView.as_view(), name="categories"),
     path("catalog", CatalogListView.as_view(), name="catalog"),
-    # path("products/popular", , name="popular_products"),
-    # path("products/limited", , name="limited_products"),
-    # path("sales", , name="sales"),
-    # path("banners", , name="banners"),
+    path("products/popular", PopularProductsListView.as_view(), name="popular_products"),
+    path("products/limited", LimitedProductsListView.as_view(), name="limited_products"),
+    path("sales", SaleListView.as_view(), name="sales"),
+    path("banners", BannerListView.as_view(), name="banners"),
 
     # basket
     # path("basket", , name="basket"),

@@ -1,10 +1,10 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework_recursive.fields import RecursiveField
 
-from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar, Category, CategoryImage
+from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar, Category, CategoryImage, \
+    Sale
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -19,19 +19,6 @@ class ReviewSerializer(serializers.ModelSerializer):
             "rate",
             "date",
         )
-
-
-class ImageSerializer(serializers.Serializer):
-    src = serializers.SerializerMethodField()
-
-    class Meta:
-        fields = (
-            "src",
-            "alt",
-        )
-
-    def get_src(self, instance):
-        return instance.src.url
 
 
 class SpecificationSerializer(serializers.ModelSerializer):
@@ -70,10 +57,11 @@ class ProductSerializer(serializers.ModelSerializer):
     date = serializers.DateTimeField(
         format="%a %b %d %Y %H:%M:%S %Z%z (Central European Standard Time)"
     )
-    rating = serializers.SerializerMethodField("calculate_rating")
+    rating = serializers.FloatField()
     reviews = ReviewSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     specifications = SpecificationSerializer(many=True, read_only=True)
+    title = serializers.SerializerMethodField("get_title")
     # В случае, если исправят в соответствии со swagger
     # tags = serializers.SlugRelatedField(
     #     many=True,
@@ -103,9 +91,14 @@ class ProductSerializer(serializers.ModelSerializer):
             "rating",
         )
 
-    def calculate_rating(self, product) -> float:
-        rating = product.reviews.aggregate(rating=Avg("rate"))["rating"]
-        return rating
+    def get_title(self, instance):
+        title = instance.title.replace("/", "-")
+        return title
+
+
+class CatalogSerializer(ProductSerializer):
+    rating = serializers.FloatField()
+    images = ProductImageSerializer(many=True, read_only=True)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -206,3 +199,28 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ("id", "title", "image", "subcategories",)
+
+
+class SaleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="product.id", read_only=True)
+    dateFrom = serializers.DateTimeField(format="%m-%d")
+    dateTo = serializers.DateTimeField(format="%m-%d")
+    price = serializers.DecimalField(max_digits=8, decimal_places=2, source="product.price", read_only=True)
+    title = serializers.CharField(source="product.title", read_only=True)
+    images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Sale
+        fields = (
+            "id",
+            "price",
+            "salePrice",
+            "dateFrom",
+            "dateTo",
+            "title",
+            "images",
+        )
+
+    def get_images(self, instance):
+        images = ProductImageSerializer(instance.product.images, many=True).data
+        return images

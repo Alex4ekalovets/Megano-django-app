@@ -1,8 +1,20 @@
+from api.models import (
+    Category,
+    CategoryImage,
+    Product,
+    ProductImage,
+    ProductTag,
+    Profile,
+    ProfileAvatar,
+    Review,
+    Sale,
+    Specification,
+    Tag,
+    Basket,
+    BasketItem,
+)
 from django.contrib import admin
 from django_mptt_admin.admin import DjangoMpttAdmin
-
-from api.models import Product, ProductImage, Category, Tag, Review, Specification, Profile, ProfileAvatar, ProductTag, \
-    CategoryImage, Sale
 
 
 class ProductImageInline(admin.StackedInline):
@@ -17,6 +29,10 @@ class ProductSpecificationInline(admin.StackedInline):
 
 class ProductTagInline(admin.StackedInline):
     model = ProductTag
+    classes = ["wide", "collapse"]
+
+class BasketItemInline(admin.StackedInline):
+    model = BasketItem
     classes = ["wide", "collapse"]
 
 
@@ -54,28 +70,42 @@ class ProductAdmin(admin.ModelAdmin):
         ProductSpecificationInline,
         ProductTagInline,
     ]
-    list_display = "pk", "title", "description_short", "price", "count", "archived", "category"
+    list_display = (
+        "pk",
+        "title",
+        "description_short",
+        "price",
+        "count",
+        "archived",
+        "category",
+    )
     list_display_links = "pk", "title"
     ordering = "-title", "pk"
     search_fields = "title", "description"
     fieldsets = [
-        (None, {
-            "fields": (
-                "title",
-                "description",
-                "price",
-                "count",
-                "category",
-                "fullDescription",
-                "freeDelivery",
-                "limited_edition",
-            ),
-        }),
-        ("Extra options", {
-            "fields": ("archived",),
-            "classes": ("collapse",),
-            "description": "Extra options. Field 'archived' is for soft delete",
-        })
+        (
+            None,
+            {
+                "fields": (
+                    "title",
+                    "description",
+                    "price",
+                    "count",
+                    "category",
+                    "fullDescription",
+                    "freeDelivery",
+                    "limited_edition",
+                ),
+            },
+        ),
+        (
+            "Extra options",
+            {
+                "fields": ("archived",),
+                "classes": ("collapse",),
+                "description": "Extra options. Field 'archived' is for soft delete",
+            },
+        ),
     ]
 
     def description_short(self, obj: Product) -> str:
@@ -94,3 +124,11 @@ class CategoryAdmin(DjangoMpttAdmin):
         CategoryImageInLine,
     ]
     prepopulated_fields = {"slug": ("title",)}
+
+
+@admin.register(Basket)
+class BasketAdmin(admin.ModelAdmin):
+    inlines = [
+        BasketItemInline,
+    ]
+    list_display = "pk", "user"

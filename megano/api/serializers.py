@@ -3,8 +3,20 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_recursive.fields import RecursiveField
 
-from .models import Product, Review, ProductImage, Specification, Tag, Profile, ProfileAvatar, Category, CategoryImage, \
-    Sale
+from .models import (
+    Category,
+    CategoryImage,
+    Product,
+    ProductImage,
+    Profile,
+    ProfileAvatar,
+    Review,
+    Sale,
+    Specification,
+    Tag,
+    Basket,
+    BasketItem,
+)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -110,7 +122,6 @@ class CatalogSerializer(ProductSerializer):
             "date",
             "title",
             "description",
-            "fullDescription",
             "freeDelivery",
             "images",
             "tags",
@@ -179,7 +190,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             update_fields = list(data.keys())
             obj.save(update_fields=update_fields)
 
-        user_data = validated_data.pop('user')
+        user_data = validated_data.pop("user")
         profile_data = validated_data
 
         update_selected_fields(obj=profile.user, data=user_data)
@@ -216,14 +227,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ("id", "title", "image", "subcategories",)
+        fields = (
+            "id",
+            "title",
+            "image",
+            "subcategories",
+        )
 
 
 class SaleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="product.id", read_only=True)
     dateFrom = serializers.DateTimeField(format="%m-%d")
     dateTo = serializers.DateTimeField(format="%m-%d")
-    price = serializers.DecimalField(max_digits=8, decimal_places=2, source="product.price", read_only=True)
+    price = serializers.DecimalField(
+        max_digits=8, decimal_places=2, source="product.price", read_only=True
+    )
     title = serializers.CharField(source="product.title", read_only=True)
     images = serializers.SerializerMethodField()
 
@@ -242,3 +260,39 @@ class SaleSerializer(serializers.ModelSerializer):
     def get_images(self, instance):
         images = ProductImageSerializer(instance.product.images, many=True).data
         return images
+
+
+class BasketSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="product.id")
+    category = serializers.IntegerField(source="product.category.id")
+    price = serializers.DecimalField(
+        source="product.price", max_digits=8, decimal_places=2
+    )
+    date = serializers.DateTimeField(
+        source="product.date",
+        format="%a %b %d %Y %H:%M:%S %Z%z (Central European Standard Time)",
+    )
+    title = serializers.CharField(source="product.title")
+    description = serializers.CharField(source="product.description")
+    freeDelivery = serializers.BooleanField(source="product.freeDelivery")
+    images = ProductImageSerializer(many=True, source="product.images")
+    tags = TagSerializer(many=True, source="product.tags")
+    rating = serializers.FloatField()
+    reviews = serializers.FloatField(source="reviews_count")
+
+    class Meta:
+        model = BasketItem
+        fields = (
+            "id",
+            "category",
+            "price",
+            "count",
+            "date",
+            "title",
+            "description",
+            "freeDelivery",
+            "images",
+            "tags",
+            "reviews",
+            "rating",
+        )

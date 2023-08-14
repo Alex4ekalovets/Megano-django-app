@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("api", "0003_alter_productimage_options_alter_category_parent_and_more"),
     ]

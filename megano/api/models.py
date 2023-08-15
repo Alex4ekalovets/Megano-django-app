@@ -291,6 +291,10 @@ class Basket(models.Model):
         Product, through="BasketItem", related_name="baskets", verbose_name="Products"
     )
 
+    class Meta:
+        verbose_name = "Basket"
+        verbose_name_plural = "Baskets"
+
 
 class BasketItem(models.Model):
     basket = models.ForeignKey(
@@ -306,3 +310,44 @@ class BasketItem(models.Model):
         related_name="basket_items",
     )
     count = models.IntegerField(default=1, verbose_name="Count")
+
+    class Meta:
+        verbose_name = "Basket item"
+        verbose_name_plural = "Basket items"
+
+
+class Order(models.Model):
+    createdAt = models.DateTimeField(auto_now_add=True, verbose_name="Date of creation")
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="orders", verbose_name="Profile")
+    deliveryType = models.CharField(max_length=128,  null=False, blank=True)
+    paymentType = models.CharField(max_length=128,  null=False, blank=True)
+    status = models.CharField(max_length=128,  null=False, blank=True)
+    city = models.CharField(max_length=128, null=False, blank=True)
+    address = models.CharField(max_length=200, null=False, blank=True)
+    products = models.ManyToManyField(
+        Product, through="OrderItem", related_name="orders", verbose_name="Products"
+    )
+
+    class Meta:
+        verbose_name = "Order"
+        verbose_name_plural = "Orders"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        verbose_name="Order",
+        related_name="order_items",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        verbose_name="Product",
+        related_name="order_items",
+    )
+    count = models.IntegerField(default=1, verbose_name="Count")
+
+    class Meta:
+        verbose_name = "Order item"
+        verbose_name_plural = "Order items"

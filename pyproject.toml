@@ -17,7 +17,31 @@ django-imagekit = "^4.1.0"
 django-mptt = "^0.14.0"
 django-mptt-admin = "^2.5.1"
 djangorestframework-recursive = "^0.1.2"
+black = "^23.7.0"
+isort = "^5.12.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+     \.git          # root of the project
+    | \.mypy_cache
+    | \.venv
+    | diploma-frontend
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+py_version = 311
+line_length = 88
+extend_skip = [".gitignore", ".dockerignore", ".env", ".env.template", "*.json", "*.lock", "*.toml", "*.yaml"]
+skip_glob = ["diploma-frontend/*"]
+skip_gitignore = true

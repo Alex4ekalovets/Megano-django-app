@@ -12,6 +12,8 @@ from api.models import (
     Tag,
     Basket,
     BasketItem,
+    Order,
+    OrderItem,
 )
 from django.contrib import admin
 from django_mptt_admin.admin import DjangoMpttAdmin
@@ -33,6 +35,10 @@ class ProductTagInline(admin.StackedInline):
 
 class BasketItemInline(admin.StackedInline):
     model = BasketItem
+    classes = ["wide", "collapse"]
+
+class OrderItemInline(admin.StackedInline):
+    model = OrderItem
     classes = ["wide", "collapse"]
 
 
@@ -132,3 +138,10 @@ class BasketAdmin(admin.ModelAdmin):
         BasketItemInline,
     ]
     list_display = "pk", "user"
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    inlines = [
+        OrderItemInline,
+    ]
+    list_display = "pk", "profile"

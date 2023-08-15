@@ -14,6 +14,7 @@ from api.views import (
     SignUpView,
     TagListView,
     BasketViewSet,
+    OrderViewSet,
 )
 from django.contrib.auth.views import LogoutView
 from django.urls import path
@@ -39,7 +40,7 @@ urlpatterns = [
     # basket
     path("basket", BasketViewSet.as_view(), name="basket"),
     # order
-    # path("orders", , name="orders"),
+    path("orders", OrderViewSet.as_view(), name="orders"),
     # path("orders/<int:pk>", , name="order_details"),
     # payment
     # path("payment", , name="payment"),

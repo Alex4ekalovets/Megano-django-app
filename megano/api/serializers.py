@@ -16,6 +16,8 @@ from .models import (
     Tag,
     Basket,
     BasketItem,
+    Order,
+    OrderItem,
 )
 
 
@@ -295,4 +297,66 @@ class BasketSerializer(serializers.ModelSerializer):
             "tags",
             "reviews",
             "rating",
+        )
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="product.id")
+    category = serializers.IntegerField(source="product.category.id")
+    price = serializers.DecimalField(
+        source="product.price", max_digits=8, decimal_places=2
+    )
+    date = serializers.DateTimeField(
+        source="product.date",
+        format="%a %b %d %Y %H:%M:%S %Z%z (Central European Standard Time)",
+    )
+    title = serializers.CharField(source="product.title")
+    description = serializers.CharField(source="product.description")
+    freeDelivery = serializers.BooleanField(source="product.freeDelivery")
+    images = ProductImageSerializer(many=True, source="product.images")
+    tags = TagSerializer(many=True, source="product.tags")
+    rating = serializers.FloatField()
+    reviews = serializers.FloatField(source="reviews_count")
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            "id",
+            "category",
+            "price",
+            "count",
+            "date",
+            "title",
+            "description",
+            "freeDelivery",
+            "images",
+            "tags",
+            "reviews",
+            "rating",
+        )
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    fullName = serializers.CharField(source="profile.fullName")
+    email = serializers.EmailField(source="profile.user.email")
+    phone = serializers.CharField(source="profile.phone")
+    totalCost = serializers.CharField(source="total_cost")
+    products = OrderItemSerializer(source="order_items", many=True)
+    createdAt = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "createdAt",
+            "fullName",
+            "email",
+            "phone",
+            "deliveryType",
+            "paymentType",
+            "totalCost",
+            "status",
+            "city",
+            "address",
+            "products",
         )
